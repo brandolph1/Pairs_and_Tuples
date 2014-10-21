@@ -9,30 +9,25 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int choice = 0;
+	CInteractiveUnitTest * test = nullptr;
+	int retVal = TEST_SUCCESS;
 
-	do
+	try
 	{
-		CTest::Instance().PrintMenu();
-		std::cout << "Enter choice (-1 to exit): ";
-		std::cin >> choice;
-
-		if (-1 < choice)
-		{
-			try
-			{
-				int rv = CTest::Instance().InvokeTest(choice);
-
-				std::cout << "Result= " << rv << std::endl;
-			}
-			catch (std::out_of_range)
-			{
-				std::cerr << "Wrong choice, try again" << std::endl;
-			}
-		}
+		test = new CInteractiveUnitTest;
 	}
-	while (-1 < choice);
+	catch (...)
+	{
+		std::cerr << "ERROR: Failed to instantiate CInteractiveUnitTest" << std::endl;
+		return TEST_FAIL;
+	}
 
-	return 0;
+	if (nullptr != test)
+	{
+		retVal = test->run();
+		delete test;
+	}
+
+	return retVal;
 }
 

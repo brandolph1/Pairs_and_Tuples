@@ -1,74 +1,157 @@
 #include "stdafx.h"
 #include "TestMethods.h"
 #include <iostream>
+#include <thread>
 
+///////////////////////////////////////////////////////////////////////////////
 // PUBLIC methods
-void CTest::PrintMenu()
+// Interactive Test Run Method
+int CInteractiveUnitTest::run()
 {
-	int nn = 0;
+	int choice = 0;
 
-	for (auto var : CTest::Spp)
+	do
 	{
-		std::cout << nn << ": " << std::get<0>(var) << std::endl;
-		nn++;
+		CUnitTest::Instance().PrintMenu();
+		std::cout << "Enter choice (-1 to exit): ";
+		std::cin >> choice;
+
+		if (-1 < choice)
+		{
+			try
+			{
+				int rv = CUnitTest::Instance().InvokeTest(choice);
+
+				std::cout << "Result= " << rv << std::endl;
+			}
+			catch (std::out_of_range)
+			{
+				std::cerr << "Wrong choice, try again" << std::endl;
+			}
+		}
+	}
+	while (-1 < choice);
+
+	return TEST_SUCCESS;
+}
+
+// Print the interactive menu, options 1..N
+void CUnitTest::PrintMenu()
+{
+	for (auto nn = 0U; nn < Spp.size(); ++nn)
+	{
+		std::cout << nn+1 << ": " << TestName(nn) << std::endl;
 	}
 }
 
-int CTest::InvokeTest(int choice)
+// Invoke the selected test method
+int CUnitTest::InvokeTest(int choice)
 {
-	return std::get<1>(CTest::Spp.at(choice))();
+	return TestPtr(choice-1)();
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// SINGLETON Items
 // PRIVATE static reference value to the single object instance
-std::unique_ptr<CTest> CTest::m_Instance;
+std::unique_ptr<CUnitTest> CUnitTest::m_Instance;
 // PRIVATE static once-flag value to control initialization of this instance
-std::once_flag CTest::m_Once;
+std::once_flag CUnitTest::m_Once;
 
 //------------------------------------------------------------------------------
 /// @brief  Instance - get a reference to the object instance (create if needed)
 /// @param  None
 /// @return Reference to the single object instance
 //------------------------------------------------------------------------------
-CTest& CTest::Instance()
+CUnitTest& CUnitTest::Instance()
 {
-	std::call_once(m_Once, []{ m_Instance.reset(new CTest); });
+	std::call_once(m_Once, []{ m_Instance.reset(new CUnitTest); });
 
 	return *m_Instance.get();
 }
 
 // Private default constructor
-CTest::CTest()
+CUnitTest::CUnitTest()
 {
-	strAmessage = "This is the message";
+	strAmessage = "This is a test message";
+
+	for (auto nn = 0U; nn < EventFlags.size(); ++nn)
+	{
+		std::atomic_init(&EventFlag(nn), false);
+	}
+
+	for (auto nn = 0U; nn < AllocFlags.size(); ++nn)
+	{
+		std::atomic_init(&AllocFlags[nn], false);
+	}
 }
 
-// PRIVATE STATIC test methods
-int CTest::Test1()
+///////////////////////////////////////////////////////////////////////////////
+// PRIVATE Non-static members
+// Unit test providers
+void CUnitTest::Test1_Provider(EventHandle ev)
 {
+	std::cout << "In Test1_Provider()" << std::endl;
+	std::this_thread::sleep_for(std::chrono::seconds(5));
+#if 0
+	std::cout << "Test1_Provider: mis-fire ..." << std::endl;
+#else
+	std::cout << "Test1_Provider: fire ***" << std::endl;
+	SetEventFlag(ev);
+	RaiseEventCondition(ev);
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// PRIVATE STATIC
+// Unit test methods
+int CUnitTest::Test1()
+{
+	EventHandle ev = 0U;
+	bool bRv = false;
+
 	std::cout << "In method Test1()" << std::endl;
-	std::cout << CTest::Instance().strAmessage << std::endl;
-	return 0;
+
+	try
+	{
+		ev = CUnitTest::Instance().AllocEvent();
+	}
+	catch (std::bad_alloc)
+	{
+		std::cerr << "ERROR: Cannot execute test" << std::endl;
+		return TEST_FAIL;
+	}
+	
+	std::thread test_provider = std::thread([=]{ CUnitTest::Instance().Test1_Provider(ev); });
+	std::cout << CUnitTest::Instance().strAmessage << std::endl;
+	bRv = CUnitTest::Instance().WaitForEventCondition(ev, 15);
+	test_provider.join();
+	std::cout << "Test result= " << ((true == bRv) ? "True" : "False") << std::endl;
+	CUnitTest::Instance().ClearEventFlag(ev);
+	CUnitTest::Instance().FreeEvent(ev);
+
+	return TEST_SUCCESS;
 }
 
-int CTest::Test2()
+int CUnitTest::Test2()
 {
 	std::cout << "In method Test2()" << std::endl;
 	return -1;
 }
 
-int CTest::Test3()
+int CUnitTest::Test3()
 {
 	std::cout << "In method Test3()" << std::endl;
 	return -2;
 }
 
-int CTest::Test4()
+int CUnitTest::Test4()
 {
 	std::cout << "In method Test4()" << std::endl;
 	return -3;
 }
 
-int CTest::Test5()
+int CUnitTest::Test5()
 {
 	std::cout << "In method Test5()" << std::endl;
 	return -4;
