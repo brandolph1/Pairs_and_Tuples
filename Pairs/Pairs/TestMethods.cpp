@@ -6,7 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC methods
 // Interactive Test Run Method
-int CInteractiveUnitTest::run()
+void CInteractiveUnitTest::run()
 {
 	int choice = 0;
 
@@ -22,7 +22,7 @@ int CInteractiveUnitTest::run()
 			{
 				int rv = CUnitTest::Instance().InvokeTest(choice);
 
-				std::cout << "Result= " << rv << std::endl;
+				std::cout << "Result= " << ((rv==TEST_SUCCESS)?"PASS":"FAIL") << std::endl;
 			}
 			catch (std::out_of_range)
 			{
@@ -31,8 +31,6 @@ int CInteractiveUnitTest::run()
 		}
 	}
 	while (-1 < choice);
-
-	return TEST_SUCCESS;
 }
 
 // Print the interactive menu, options 1..N
@@ -74,16 +72,6 @@ CUnitTest& CUnitTest::Instance()
 CUnitTest::CUnitTest()
 {
 	strAmessage = "This is a test message";
-
-	for (auto nn = 0U; nn < EventFlags.size(); ++nn)
-	{
-		std::atomic_init(&EventFlag(nn), false);
-	}
-
-	for (auto nn = 0U; nn < AllocFlags.size(); ++nn)
-	{
-		std::atomic_init(&AllocFlags[nn], false);
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,23 +124,23 @@ int CUnitTest::Test1()
 int CUnitTest::Test2()
 {
 	std::cout << "In method Test2()" << std::endl;
-	return -1;
+	return TEST_SUCCESS;
 }
 
 int CUnitTest::Test3()
 {
 	std::cout << "In method Test3()" << std::endl;
-	return -2;
+	return TEST_SUCCESS;
 }
 
 int CUnitTest::Test4()
 {
 	std::cout << "In method Test4()" << std::endl;
-	return -3;
+	return TEST_SUCCESS;
 }
 
 int CUnitTest::Test5()
 {
 	std::cout << "In method Test5()" << std::endl;
-	return -4;
+	return TEST_SUCCESS;
 }

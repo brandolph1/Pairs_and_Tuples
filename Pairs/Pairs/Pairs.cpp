@@ -2,15 +2,12 @@
 //
 
 #include "stdafx.h"
-#include <iostream>
-#include <string>
-#include <utility>
 #include "TestMethods.h"
+#include <iostream>
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	CInteractiveUnitTest * test = nullptr;
-	int retVal = TEST_SUCCESS;
 
 	try
 	{
@@ -19,15 +16,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	catch (...)
 	{
 		std::cerr << "ERROR: Failed to instantiate CInteractiveUnitTest" << std::endl;
-		return TEST_FAIL;
+		return 255;
 	}
 
 	if (nullptr != test)
 	{
-		retVal = test->run();
+		test->run();
 		delete test;
 	}
 
-	return retVal;
+	return 0;
 }
 
