@@ -1,5 +1,23 @@
 #pragma once
-
+//
+// Base class for allocating, registering, and alerting condition events
+//
+// Typical use:
+//  in main thread--
+//   1. EventHandle ev = AllocEvent();
+//   2. start worker thread, passing 'ev'
+//   3. flag = WaitForEventCondition(ev, t-duration);
+//   4. join worker thread
+//   5. report/test flag, consume data from worker thread
+//   6. ClearEventFlag(ev)
+//   7. FreeEvent(ev)
+//
+//  in worker thread--
+//   1. Accept event handle 'ev' as a parameter
+//   2. Do some work, create data for consumption by main thread
+//   3. SetEventFlag(ev)
+//   4. RaiseEventCondition(ev)
+//
 #include <memory>
 #include <array>
 #include <atomic>
