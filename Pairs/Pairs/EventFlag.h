@@ -27,8 +27,10 @@
 class CEventFlag
 {
 private:
-	typedef std::pair<std::atomic<bool>, std::condition_variable> BoolCondPair;
-	typedef std::array<BoolCondPair, 5> EventArray;
+	// Three things needed to communicate between threads: a data object (here an atomic bool),
+	// a mutex and a condition variable; all contained in a Tuple
+	typedef std::tuple<std::atomic<bool>, std::mutex, std::condition_variable> BoolCondTuple;
+	typedef std::array<BoolCondTuple, 5> EventArray;
 	typedef std::array<std::atomic<bool>, 5> AllocEventArray;
 
 	EventArray EventFlags;
@@ -113,9 +115,14 @@ public:
 		EventFlag(ii).store(true);
 	}
 
-	std::condition_variable& EventCondition(size_t ii)
+	std::mutex& ReadyMutex(size_t ii)
 	{
 		return std::get<1>(EventFlags.at(ii));
+	}
+
+	std::condition_variable& EventCondition(size_t ii)
+	{
+		return std::get<2>(EventFlags.at(ii));
 	}
 
 	void RaiseEventCondition(size_t ii)
@@ -125,8 +132,7 @@ public:
 
 	bool WaitForEventCondition(size_t ii, int tt)
 	{
-		std::mutex readyMutex;
-		std::unique_lock<std::mutex> ul(readyMutex);
+		std::unique_lock<std::mutex> ul(ReadyMutex(ii));
 
 		return EventCondition(ii).wait_for(ul, std::chrono::seconds(tt), [=]{ return GetEventFlag(ii); });
 	} // lock is released here
