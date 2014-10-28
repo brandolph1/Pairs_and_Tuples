@@ -90,6 +90,13 @@ void CUnitTest::Test1_Provider(EventHandle ev)
 #endif
 }
 
+void CUnitTest::Test2_Provider(int id, EventHandle ev)
+{
+	std::cout << "In Test2_Provider(" << id << ")" << std::endl;
+	(void) WaitForEventCondition(ev);
+	std::cout << "Test2_Provider(" << id << "): fire ***" << std::endl;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE STATIC
 // Unit test methods
@@ -111,6 +118,7 @@ int CUnitTest::Test1()
 	}
 	
 	std::thread test_provider = std::thread([=]{ CUnitTest::Instance().Test1_Provider(ev); });
+
 	std::cout << CUnitTest::Instance().strAmessage << std::endl;
 	bRv = CUnitTest::Instance().WaitForEventCondition(ev, 15);
 	test_provider.join();
@@ -123,7 +131,37 @@ int CUnitTest::Test1()
 
 int CUnitTest::Test2()
 {
+	EventHandle ev = 0U;
+
 	std::cout << "In method Test2()" << std::endl;
+
+	try
+	{
+		ev = CUnitTest::Instance().AllocEvent();
+	}
+	catch (std::bad_alloc)
+	{
+		std::cerr << "ERROR: Cannot execute test" << std::endl;
+		return TEST_FAIL;
+	}
+
+	const size_t NumProviders = 5;
+	std::thread test_providers[NumProviders];
+
+	for (size_t nn = 0; nn < NumProviders; ++nn)
+	{
+		test_providers[nn] = std::thread([=]{ CUnitTest::Instance().Test2_Provider(nn+1, ev); });
+	}
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(800));
+	CUnitTest::Instance().SetEventFlag(ev);
+	CUnitTest::Instance().RaiseEventCondition(ev);
+
+	for (auto& tp : test_providers) tp.join();
+	
+	CUnitTest::Instance().ClearEventFlag(ev);
+	CUnitTest::Instance().FreeEvent(ev);
+
 	return TEST_SUCCESS;
 }
 

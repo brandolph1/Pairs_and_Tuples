@@ -37,6 +37,9 @@ private:
 	static int Test4();
 	static int Test5();
 
+	void Test1_Provider(EventHandle);
+	void Test2_Provider(int, EventHandle);
+
 	typedef int(*TestMethodPtr)(void);
 	typedef std::pair<std::string, TestMethodPtr> StrPtrPair;
 	typedef std::array<StrPtrPair, 5> MenuArray;
@@ -58,8 +61,6 @@ private:
 	{
 		return std::get<1>(Spp.at(ii));
 	}
-
-	void Test1_Provider(EventHandle);
 
 	std::string strAmessage;
 };

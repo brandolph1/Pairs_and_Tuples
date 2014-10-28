@@ -130,10 +130,24 @@ public:
 		EventCondition(ii).notify_all();
 	}
 
-	bool WaitForEventCondition(size_t ii, int tt)
+	bool WaitForEventCondition(size_t ii, int tt=0)
 	{
+		bool rv = false;
 		std::unique_lock<std::mutex> ul(ReadyMutex(ii));
 
-		return EventCondition(ii).wait_for(ul, std::chrono::seconds(tt), [=]{ return GetEventFlag(ii); });
+		if (0 == tt)
+		{
+			// Wait until notified
+			EventCondition(ii).wait(ul, [=]{ return GetEventFlag(ii); });
+			rv = true;
+		}
+		else
+		{
+			// Wait for timeout or until notified
+			// 'rv' will be false when timeout and flag not set, otherwise will be true
+			rv = EventCondition(ii).wait_for(ul, std::chrono::seconds(tt), [=]{ return GetEventFlag(ii); });
+		}
+
+		return rv;
 	} // lock is released here
 };
